@@ -23,12 +23,13 @@ def mainLoop(ur_address):
     rospy.loginfo("Activating gripper")
     gripper.activate(auto_calibrate=False)
   
+  rate = rospy.Rate(100)
   while not rospy.is_shutdown():
     # Get and publish the Gripper status
     status = gripper.getStatus()
     pub.publish(status)
     # Wait a little
-    rospy.sleep(0.03)
+    rate.sleep()
 
 
 if __name__ == '__main__':

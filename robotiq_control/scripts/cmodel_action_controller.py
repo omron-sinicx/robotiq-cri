@@ -115,7 +115,7 @@ class CModelActionController(object):
       rate.sleep()
 
       time_since_command = rospy.get_rostime() - command_sent_time
-      if time_since_command > rospy.Duration(0.5) and self._stalled():
+      if time_since_command > rospy.Duration(0.25) and self._stalled():
         break
     rospy.logdebug('%s: Succeeded' % self._name)
     result = CModelCommandResult()

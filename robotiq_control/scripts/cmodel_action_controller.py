@@ -53,8 +53,8 @@ class CModelActionController(object):
     rospy.logdebug('%s: Started' % self._name)
 
   def _preempt(self):
-    self._stop()
-    rospy.loginfo('%s: Preempted' % self._name)
+    # self._stop() 
+    # rospy.loginfo('%s: Preempted' % self._name)
     self._server.set_preempted()
 
   def _status_cb(self, msg):

@@ -39,7 +39,6 @@ class CModelActionController(object):
     self._server = SimpleActionServer(self._name, CModelCommandAction, execute_cb=self._execute_cb, auto_start = False)
     self.status_pub = rospy.Publisher('gripper_status', CModelCommandFeedback, queue_size=1)
     self.js_pub = rospy.Publisher('joint_states', JointState, queue_size=1)
-    self.js_pub_global = rospy.Publisher('/joint_states', JointState, queue_size=1)
     rospy.Subscriber('status', CModelStatus, self._status_cb, queue_size=1)
     self._cmd_pub = rospy.Publisher('command', CModelCommand, queue_size=1)
     working = True
@@ -62,14 +61,11 @@ class CModelActionController(object):
     # Publish the joint_states for the gripper
     js_msg = JointState()
     js_msg.header.stamp = rospy.Time.now()
-    js_msg.name.append(self._joint_name)
+    js_msg.name.append(self._gripper_prefix + self._joint_name)
     # js_msg.position.append(0.8*self._status.gPO/self._min_gap_counts)
     js_msg.position.append(self._counts_to_meters*
                            self._status.gPO/self._min_gap_counts)
     self.js_pub.publish(js_msg)
-    js_msg.name = []
-    js_msg.name.append(self._gripper_prefix + self._joint_name)
-    self.js_pub_global.publish(js_msg)
 
     # Publish the gripper status (to easily access gripper width)
     feedback = CModelCommandFeedback()

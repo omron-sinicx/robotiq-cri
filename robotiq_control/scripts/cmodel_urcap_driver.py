@@ -28,7 +28,7 @@ def mainLoop(ur_address):
     status = gripper.getStatus()
     pub.publish(status)
     # Wait a little
-    rospy.sleep(0.03)
+    rospy.sleep(0.01)
 
 
 if __name__ == '__main__':

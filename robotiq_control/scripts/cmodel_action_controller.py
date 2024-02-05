@@ -64,7 +64,7 @@ class CModelActionController(object):
     def _status_cb(self, msg):
         self.current_time = rospy.get_time()
         dt = self.current_time - self.last_time
-        self.current_position = self._counts_to_meters * self._status.gPO/self._min_gap_counts
+        self.current_position = self._get_position()
         self.current_velocity = (self.current_position - self.last_position) / (dt + 1e-8)
 
         self._status = msg
@@ -74,6 +74,7 @@ class CModelActionController(object):
         js_msg.name.append(self._gripper_prefix + self._joint_name)
         js_msg.position.append(self.current_position)
         js_msg.velocity.append(self.current_velocity)
+        js_msg.effort.append(0.0)
         self.js_pub.publish(js_msg)
 
         self.last_position = self.current_position

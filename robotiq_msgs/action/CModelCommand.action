@@ -10,6 +10,7 @@ bool        reached_goal
 ---
 # Feedback
 float64     position
+float64     velocity
 bool        activated
 bool        stalled
 bool        reached_goal

@@ -73,7 +73,7 @@ class CModelActionController(object):
         js_msg.header.stamp = rospy.Time.now()
         js_msg.name.append(self._gripper_prefix + self._joint_name)
         js_msg.position.append(self.current_position)
-        js_msg.velocity.append(self.current_position)
+        js_msg.velocity.append(self.current_velocity)
         self.js_pub.publish(js_msg)
 
         self.last_position = self.current_position
@@ -83,6 +83,7 @@ class CModelActionController(object):
         feedback = CModelCommandFeedback()
         feedback.activated = self._ready()
         feedback.position = self._get_position()
+        feedback.velocity = self.current_velocity
         feedback.stalled = self._stalled()
         # # feedback.reached_goal = self._reached_goal(position)
         self.status_pub.publish(feedback)

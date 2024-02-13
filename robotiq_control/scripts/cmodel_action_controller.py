@@ -41,7 +41,7 @@ class CModelActionController(object):
         # Configure and start the action server
         self._status = CModelStatus()
         self._name = self._ns + 'gripper_action_controller'
-        self._server = SimpleActionServer(self._name, CModelCommandAction, execute_cb=self._execute_cb, auto_start=False)
+        self._server = SimpleActionServer(self._name, CModelCommandAction, execute_cb=self._execute_no_delay_cb, auto_start=False)
         self.status_pub = rospy.Publisher('gripper_status', CModelCommandFeedback, queue_size=1)
         self.js_pub = rospy.Publisher('joint_states', JointState, queue_size=1)
         rospy.Subscriber('status', CModelStatus, self._status_cb, queue_size=1)
@@ -89,6 +89,33 @@ class CModelActionController(object):
         # # feedback.reached_goal = self._reached_goal(position)
         self.status_pub.publish(feedback)
 
+    def _execute_no_delay_cb(self, goal):
+        # Check that the gripper is active. If not, activate it.
+        if not self._ready():
+            if not self._silent_activate():
+                self._server.set_preempted()
+                return
+        
+        # check that preempt has not been requested by the client
+        if self._server.is_preempt_requested():
+            self._server.set_preempted()
+            return
+
+        # Clip the goal
+        position = np.clip(goal.position, self._min_gap, self._max_gap)
+        velocity = np.clip(goal.velocity, self._min_speed, self._max_speed)
+        force = np.clip(goal.force, self._min_force, self._max_force)
+        
+        # Send the goal to the gripper and feedback to the action client
+        self._status.gOBJ = 0  # R.Hanai
+        self._goto_position(position, velocity, force)
+
+        result = CModelCommandResult()
+        result.position = self._get_position()
+        result.stalled = self._stalled()
+        result.reached_goal = self._reached_goal(position)
+        self._server.set_succeeded(result)
+
     def _execute_cb(self, goal):
         # Check that the gripper is active. If not, activate it.
         if not self._ready():
@@ -132,6 +159,14 @@ class CModelActionController(object):
         result.stalled = self._stalled()
         result.reached_goal = self._reached_goal(position)
         self._server.set_succeeded(result)
+
+    def _silent_activate(self):
+        command = CModelCommand()
+        command.rACT = 1
+        command.rGTO = 1
+        command.rSP = 255
+        command.rFR = 150
+        self._cmd_pub.publish(command)
 
     def _activate(self, timeout=5.0):
         command = CModelCommand()

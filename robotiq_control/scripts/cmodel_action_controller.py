@@ -5,6 +5,7 @@ import numpy as np
 from sensor_msgs.msg import JointState
 # Actionlib
 from actionlib import SimpleActionServer
+from control_msgs.msg import GripperCommandAction, GripperCommandGoal, GripperCommandResult, GripperCommandFeedback
 from robotiq_msgs.msg import (
     CModelCommand,
     CModelStatus,
@@ -42,6 +43,8 @@ class CModelActionController(object):
         self._status = CModelStatus()
         self._name = self._ns + 'gripper_action_controller'
         self._server = SimpleActionServer(self._name, CModelCommandAction, execute_cb=self._execute_no_delay_cb, auto_start=False)
+        self._simple_gripper_server = SimpleActionServer(self._ns + 'simple_gripper_action_controller', GripperCommandAction, execute_cb=self._simple_gripper_action_cb, auto_start=False)
+
         self.status_pub = rospy.Publisher('gripper_status', CModelCommandFeedback, queue_size=1)
         self.js_pub = rospy.Publisher('joint_states', JointState, queue_size=1)
         rospy.Subscriber('status', CModelStatus, self._status_cb, queue_size=1)
@@ -54,6 +57,7 @@ class CModelActionController(object):
         if not working:
             return
         self._server.start()
+        self._simple_gripper_server.start()
         rospy.logdebug('%s: Started' % self._name)
 
     def _preempt(self):
@@ -89,13 +93,59 @@ class CModelActionController(object):
         # # feedback.reached_goal = self._reached_goal(position)
         self.status_pub.publish(feedback)
 
+    def _simple_gripper_action_cb(self, goal: GripperCommandGoal):
+        rospy.loginfo(f"foo {goal}")
+        # Check that the gripper is active. If not, activate it.
+        if not self._ready():
+            if not self._silent_activate():
+                self._simple_gripper_server.set_preempted()
+                return
+
+        # check that preempt has not been requested by the client
+        if self._simple_gripper_server.is_preempt_requested():
+            self._simple_gripper_server.set_preempted()
+            return
+
+        # Clip the goal
+        position = np.clip(goal.command.position, self._min_gap, self._max_gap)
+        velocity = self._max_speed  # TODO: Fix hard-coded params
+        force = self._max_force  # TODO: Fix hard-coded params
+
+        # Send the goal to the gripper and feedback to the action client
+        self._status.gOBJ = 0  # R.Hanai
+
+        feedback = GripperCommandFeedback()
+        rate = rospy.Rate(self._fb_rate)
+
+        command_sent_time = rospy.get_rostime()
+        while not self._reached_goal(position):
+            self._goto_position(position, velocity, force)
+            if rospy.is_shutdown() or self._simple_gripper_server.is_preempt_requested():
+                self._preempt()
+                return
+            feedback.position = self._get_position()
+            feedback.stalled = self._stalled()
+            feedback.reached_goal = self._reached_goal(position)
+            self._simple_gripper_server.publish_feedback(feedback)
+            rate.sleep()
+
+            time_since_command = rospy.get_rostime() - command_sent_time
+            if time_since_command > rospy.Duration(0.5) and self._stalled():
+                break
+
+        result = GripperCommandResult()
+        result.position = self._get_position()
+        result.stalled = self._stalled()
+        result.reached_goal = self._reached_goal(position)
+        self._simple_gripper_server.set_succeeded(result)
+
     def _execute_no_delay_cb(self, goal):
         # Check that the gripper is active. If not, activate it.
         if not self._ready():
             if not self._silent_activate():
                 self._server.set_preempted()
                 return
-        
+
         # check that preempt has not been requested by the client
         if self._server.is_preempt_requested():
             self._server.set_preempted()
@@ -105,7 +155,7 @@ class CModelActionController(object):
         position = np.clip(goal.position, self._min_gap, self._max_gap)
         velocity = np.clip(goal.velocity, self._min_speed, self._max_speed)
         force = np.clip(goal.force, self._min_force, self._max_force)
-        
+
         # Send the goal to the gripper and feedback to the action client
         self._status.gOBJ = 0  # R.Hanai
         self._goto_position(position, velocity, force)

@@ -68,7 +68,8 @@ class CModelActionController(object):
     def _status_cb(self, msg):
         self.current_time = rospy.get_time()
         dt = self.current_time - self.last_time
-        self.current_position = self._get_position()
+        # self.current_position = self._get_position()  # opening width
+        self.current_position = self._counts_to_meters * self._status.gPO / self._min_gap_counts  # angle
         self.current_velocity = (self.current_position - self.last_position) / (dt + 1e-8)
 
         self._status = msg
@@ -108,8 +109,12 @@ class CModelActionController(object):
             self._simple_gripper_server.set_preempted()
             return
 
+        # compute target opening width
+        target_gPO = goal.command.position * self._min_gap_counts / self._counts_to_meters
+        pos = np.clip((self._max_gap - self._min_gap)/(-self._min_gap_counts)*(target_gPO-self._min_gap_counts), self._min_gap, self._max_gap)
+
         # Clip the goal
-        position = np.clip(goal.command.position, self._min_gap, self._max_gap)
+        position = np.clip(pos, self._min_gap, self._max_gap)
         velocity = self._min_speed  # TODO: Fix hard-coded params
         force = self._max_force  # TODO: Fix hard-coded params
 

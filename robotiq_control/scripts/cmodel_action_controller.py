@@ -91,10 +91,12 @@ class CModelActionController(object):
         feedback.velocity = self.current_velocity
         feedback.stalled = self._stalled()
         # # feedback.reached_goal = self._reached_goal(position)
-        self.status_pub.publish(feedback)
+        try:
+            self.status_pub.publish(feedback)
+        except rospy.ROSException:
+            pass
 
     def _simple_gripper_action_cb(self, goal: GripperCommandGoal):
-        rospy.loginfo(f"foo {goal}")
         # Check that the gripper is active. If not, activate it.
         if not self._ready():
             if not self._silent_activate():
@@ -108,7 +110,7 @@ class CModelActionController(object):
 
         # Clip the goal
         position = np.clip(goal.command.position, self._min_gap, self._max_gap)
-        velocity = self._max_speed  # TODO: Fix hard-coded params
+        velocity = self._min_speed  # TODO: Fix hard-coded params
         force = self._max_force  # TODO: Fix hard-coded params
 
         # Send the goal to the gripper and feedback to the action client
@@ -121,7 +123,7 @@ class CModelActionController(object):
         while not self._reached_goal(position):
             self._goto_position(position, velocity, force)
             if rospy.is_shutdown() or self._simple_gripper_server.is_preempt_requested():
-                self._preempt()
+                self._simple_gripper_server.set_preempted()
                 return
             feedback.position = self._get_position()
             feedback.stalled = self._stalled()
@@ -130,7 +132,7 @@ class CModelActionController(object):
             rate.sleep()
 
             time_since_command = rospy.get_rostime() - command_sent_time
-            if time_since_command > rospy.Duration(0.5) and self._stalled():
+            if time_since_command > rospy.Duration(1.0) and self._stalled():
                 break
 
         result = GripperCommandResult()
@@ -203,6 +205,7 @@ class CModelActionController(object):
             time_since_command = rospy.get_rostime() - command_sent_time
             if time_since_command > rospy.Duration(0.5) and self._stalled():
                 break
+
         rospy.logdebug('%s: Succeeded' % self._name)
         result = CModelCommandResult()
         result.position = self._get_position()

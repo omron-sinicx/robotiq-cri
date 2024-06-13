@@ -43,6 +43,7 @@ class CModelActionController(object):
         self._status = CModelStatus()
         self._name = self._ns + 'gripper_action_controller'
         self._server = SimpleActionServer(self._name, CModelCommandAction, execute_cb=self._execute_no_delay_cb, auto_start=False)
+        self._server_old = SimpleActionServer(self._name + '_old', CModelCommandAction, execute_cb=self._execute_cb, auto_start=False)
         self._simple_gripper_server = SimpleActionServer(self._ns + 'simple_gripper_action_controller', GripperCommandAction, execute_cb=self._simple_gripper_action_cb, auto_start=False)
 
         self.status_pub = rospy.Publisher('gripper_status', CModelCommandFeedback, queue_size=1)
@@ -57,6 +58,7 @@ class CModelActionController(object):
         if not working:
             return
         self._server.start()
+        self._server_old.start()
         self._simple_gripper_server.start()
         rospy.logdebug('%s: Started' % self._name)
 
@@ -180,8 +182,8 @@ class CModelActionController(object):
                 rospy.logwarn('%s could not accept goal because the gripper is not yet active' % self._name)
                 return
         # check that preempt has not been requested by the client
-        if self._server.is_preempt_requested():
-            self._preempt()
+        if self._server_old.is_preempt_requested():
+            self._server_old.set_preempted()
             return
         # Clip the goal
         position = np.clip(goal.position, self._min_gap, self._max_gap)
@@ -198,13 +200,13 @@ class CModelActionController(object):
         command_sent_time = rospy.get_rostime()
         while not self._reached_goal(position):
             self._goto_position(position, velocity, force)
-            if rospy.is_shutdown() or self._server.is_preempt_requested():
-                self._preempt()
+            if rospy.is_shutdown() or self._server_old.is_preempt_requested():
+                self._server_old.set_preempted()
                 return
             feedback.position = self._get_position()
             feedback.stalled = self._stalled()
             feedback.reached_goal = self._reached_goal(position)
-            self._server.publish_feedback(feedback)
+            self._server_old.publish_feedback(feedback)
             rate.sleep()
 
             time_since_command = rospy.get_rostime() - command_sent_time
@@ -216,7 +218,7 @@ class CModelActionController(object):
         result.position = self._get_position()
         result.stalled = self._stalled()
         result.reached_goal = self._reached_goal(position)
-        self._server.set_succeeded(result)
+        self._server_old.set_succeeded(result)
 
     def _silent_activate(self):
         command = CModelCommand()

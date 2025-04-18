@@ -13,6 +13,8 @@ from robotiq_msgs.msg import (
     CModelCommandFeedback,
     CModelCommandResult,
 )
+from dynamic_reconfigure.server import Server
+from robotiq_control.cfg import GripperConfig
 
 
 def read_parameter(name, default):
@@ -62,6 +64,9 @@ class CModelActionController(object):
         self._simple_gripper_server.start()
         rospy.logdebug('%s: Started' % self._name)
 
+        # Setup dynamic reconfigure server
+        self._dyn_reconf_server = Server(GripperConfig, self._reconfigure_callback, namespace=self._ns + '/gripper_action_controller')
+
     def _preempt(self):
         # self._stop()
         # rospy.loginfo('%s: Preempted' % self._name)
@@ -99,6 +104,12 @@ class CModelActionController(object):
         except rospy.ROSException:
             pass
 
+    def _reconfigure_callback(self, config, level):
+        """Dynamic reconfigure callback for gripper parameters."""
+        self.gripper_speed = config['max_speed']
+        self.gripper_force = config['max_force']
+        return config
+
     def _simple_gripper_action_cb(self, goal: GripperCommandGoal):
         # Check that the gripper is active. If not, activate it.
         if not self._ready():
@@ -117,8 +128,8 @@ class CModelActionController(object):
 
         # Clip the goal
         position = np.clip(pos, self._min_gap, self._max_gap)
-        velocity = self._min_speed  # TODO: Fix hard-coded params
-        force = self._max_force  # TODO: Fix hard-coded params
+        velocity = self.gripper_speed  # Using dynamic reconfigure parameter
+        force = self.gripper_force  # Using dynamic reconfigure parameter
 
         # Send the goal to the gripper and feedback to the action client
         self._status.gOBJ = 0  # R.Hanai

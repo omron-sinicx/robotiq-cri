@@ -1,23 +1,23 @@
-<package>
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>robotiq_msgs</name>
   <version>0.1.0</version>
-  <description>The robotiq_msgs package</description>
-  
-  <maintainer email="fsuarez.ruiz@pmail.ntu.edu.sg">Francisco Suarez Ruiz</maintainer>
-  <license>BSD</license>
+  <description>ROS 2 interfaces for Robotiq C-model grippers.</description>
+
+  <maintainer email="cristian.beltran@sinicx.com">Cristian C. Beltran-Hernandez</maintainer>
   <author email="fsuarez.ruiz@pmail.ntu.edu.sg">Francisco Suarez Ruiz</author>
-  <url type="website">https://github.com/crigroup/robotiq</url>
-  <url type="bugtracker">https://github.com/crigroup/robotiq/issues</url>
+  <license>BSD</license>
   <url type="repository">https://github.com/crigroup/robotiq</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>actionlib</build_depend>
-  <build_depend>actionlib_msgs</build_depend>
-  <build_depend>control_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
-  
-  <run_depend>actionlib</run_depend>
-  <run_depend>actionlib_msgs</run_depend>
-  <run_depend>control_msgs</run_depend>
-  <run_depend>message_runtime</run_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <depend>action_msgs</depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

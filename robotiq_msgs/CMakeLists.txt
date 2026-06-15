@@ -1,29 +1,15 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(robotiq_msgs)
 
-find_package(catkin REQUIRED COMPONENTS 
-  actionlib
-  actionlib_msgs
-  control_msgs
-  message_generation 
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+# The .msg/.action contain only primitive fields, so no interface DEPENDENCIES are
+# needed. action_msgs is pulled in automatically for the action's goal-status plumbing.
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/CModelCommand.msg"
+  "msg/CModelStatus.msg"
+  "action/CModelCommand.action"
 )
 
-add_message_files(
-  FILES 
-  CModelCommand.msg 
-  CModelStatus.msg
-)
-
-add_action_files(
-  FILES
-  CModelCommand.action
-)
-
-generate_messages(DEPENDENCIES actionlib_msgs control_msgs)
-
-catkin_package(CATKIN_DEPENDS 
-  actionlib 
-  actionlib_msgs 
-  control_msgs 
-  message_runtime
-)
+ament_package()

@@ -1,8 +1,10 @@
-uint8 gACT 
-uint8 gGTO 
-uint8 gSTA 
-uint8 gOBJ 
-uint8 gFLT
-uint8 gPR
-uint8 gPO
-uint8 gCU
+# Robotiq C-model status registers.
+# Field names lowercased for ROS 2 rosidl (ROS 1 names: gACT gGTO gSTA gOBJ gFLT gPR gPO gCU).
+uint8 g_act
+uint8 g_gto
+uint8 g_sta
+uint8 g_obj
+uint8 g_flt
+uint8 g_pr
+uint8 g_po
+uint8 g_cu

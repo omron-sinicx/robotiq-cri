@@ -1,0 +1,6 @@
+# Deferred from the ROS 2 migration. This package is the REAL-hardware Robotiq
+# driver (catkin + rospy + dynamic_reconfigure; pymodbus URCAP/RTU/TCP/URScript
+# drivers and the cmodel_action_controller). It is not needed for the Hand-E
+# *simulation* path, which is driven by a standard ros2_control gripper_controller
+# (JointTrajectoryController) in gz_ros2_control. Re-port when real-robot gripper
+# control is needed. Remove this file to re-enable the package in colcon builds.

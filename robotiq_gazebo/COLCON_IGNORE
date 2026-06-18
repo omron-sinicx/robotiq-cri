@@ -1,0 +1,8 @@
+# Deferred from the ROS 2 migration. This package targets CLASSIC Gazebo (catkin +
+# gazebo_ros + roscpp): C++ mimic_joint_plugin / disable_link_plugin and the
+# cmodel_controller_emulator. None of it applies to the new gz-sim (Harmonic) path:
+# - gz_ros2_control commands both Hand-E fingers directly, so the mimic plugin is moot;
+# - the gripper action is a standard ros2_control gripper_controller, so the emulator
+#   is unnecessary.
+# Re-port only if a gz-Harmonic mimic system plugin or a Robotiq emulator is needed.
+# Remove this file to re-enable the package in colcon builds.
